@@ -1,0 +1,2064 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mouse Odor Challenge</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2630;
+      --muted: #69737f;
+      --panel: #ffffff;
+      --line: #c9d3dc;
+      --lab: #eaf3f6;
+      --accent: #287c8f;
+      --reward: #148c5a;
+      --danger: #b74343;
+      --warn: #ba7a10;
+      --ui-icon-width: 22px;
+      --ui-icon-height: 22px;
+      --hp-icon-width: 26px;
+      --hp-icon-height: 26px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f7fbfc 0%, #e6f0f3 100%);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      width: min(1400px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 16px 0 20px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .controls,
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      min-width: 92px;
+      border: 1px solid #8796a3;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font: 700 14px/1 Arial, Helvetica, sans-serif;
+      padding: 10px 14px;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover {
+      background: #eef6f8;
+      border-color: var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 7px 10px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .history {
+      min-width: 132px;
+      text-align: center;
+      font: 800 24px/1.2 "Courier New", monospace;
+      letter-spacing: 0;
+    }
+
+    .hp-wrap {
+      display: grid;
+      grid-template-columns: 68px minmax(140px, 240px) 58px;
+      gap: 8px;
+      align-items: center;
+      min-width: 270px;
+    }
+
+    .hp-label {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      font-weight: 800;
+    }
+
+    .ui-icon {
+      width: var(--ui-icon-width);
+      height: var(--ui-icon-height);
+      object-fit: contain;
+      flex: 0 0 auto;
+    }
+
+    .hp-icon {
+      width: var(--hp-icon-width);
+      height: var(--hp-icon-height);
+    }
+
+    .hp-track {
+      height: 18px;
+      border: 1px solid #78909c;
+      border-radius: 5px;
+      background: #e9eef1;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, #d95b50, #dfb443 45%, #25a268);
+      transition: width 120ms linear;
+    }
+
+    .canvas-wrap {
+      border: 1px solid #b7c5ce;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(35, 58, 73, 0.14);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--lab);
+    }
+
+    .debug {
+      display: none;
+      margin-top: 12px;
+      border: 1px solid #b7c5ce;
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      font: 13px/1.35 "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    .debug.is-visible {
+      display: block;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .touch-controls,
+    .orientation-note {
+      display: none;
+    }
+
+    .touch-controls {
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .touch-action {
+      min-width: 0;
+      min-height: 62px;
+      border-width: 2px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+
+    .touch-action.primary {
+      border-color: var(--accent);
+      background: #e7f4f7;
+      color: #15596a;
+    }
+
+    .touch-action.reward {
+      border-color: var(--reward);
+      background: #e8f6ef;
+      color: #0c6841;
+    }
+
+    .touch-action.defend {
+      border-color: var(--danger);
+      background: #faeeee;
+      color: #8f3030;
+    }
+
+    .touch-action:active {
+      transform: translateY(1px);
+      filter: brightness(0.94);
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        width: 100%;
+        padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "hp history"
+          "stats controls";
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .controls {
+        grid-area: controls;
+        justify-content: flex-end;
+        gap: 4px;
+      }
+
+      .controls #startButton {
+        display: none;
+      }
+
+      .controls button {
+        min-width: 66px;
+        padding: 8px;
+        font-size: 12px;
+      }
+
+      .stats {
+        grid-area: stats;
+        gap: 4px;
+      }
+
+      .stats .pill {
+        padding: 5px 6px;
+        font-size: 12px;
+      }
+
+      .stats .pill:last-child {
+        display: none;
+      }
+
+      .hp-wrap {
+        grid-area: hp;
+        grid-template-columns: 62px 1fr 52px;
+        min-width: 100%;
+      }
+
+      .history {
+        grid-area: history;
+        min-width: 112px;
+        font-size: 19px;
+      }
+
+      .touch-controls,
+      .orientation-note {
+        display: grid;
+      }
+
+      .orientation-note {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .hint {
+        display: none;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .stats .pill {
+        font-size: 11px;
+      }
+
+      .ui-icon {
+        width: 17px;
+        height: 17px;
+      }
+    }
+
+    @media (max-width: 900px) and (max-height: 560px) and (orientation: landscape) {
+      body {
+        overflow: hidden;
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        height: 100dvh;
+        padding-top: max(4px, env(safe-area-inset-top));
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+      }
+
+      .topbar {
+        grid-template-columns: minmax(220px, 1fr) auto auto auto;
+        grid-template-areas: "hp stats history controls";
+        margin-bottom: 4px;
+      }
+
+      .hp-wrap {
+        grid-template-columns: 54px minmax(110px, 1fr) 48px;
+        gap: 5px;
+      }
+
+      .stats {
+        flex-wrap: nowrap;
+      }
+
+      .stats .pill:nth-child(n + 4) {
+        display: none;
+      }
+
+      .canvas-wrap {
+        display: flex;
+        min-height: 0;
+        align-items: center;
+        justify-content: center;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .touch-controls {
+        margin-top: 4px;
+      }
+
+      .touch-action {
+        min-height: 54px;
+        padding: 8px 10px;
+      }
+
+      .orientation-note,
+      .debug {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar" aria-label="Game controls and status">
+      <div class="controls">
+        <button id="startButton" type="button">Start</button>
+        <button id="resetButton" type="button">Reset</button>
+        <button id="soundButton" type="button">Sound On</button>
+      </div>
+
+      <div class="hp-wrap" aria-label="Health points">
+        <span class="hp-label"><img class="ui-icon hp-icon" src="assets/hp_icon.png" alt="">HP</span>
+        <div class="hp-track"><div class="hp-fill" id="hpFill"></div></div>
+        <span id="hpText">50/100</span>
+      </div>
+
+      <div class="stats">
+        <span class="pill">Odor <strong id="odorText">0</strong></span>
+        <span class="pill"><img class="ui-icon" src="assets/reward_icon.png" alt="">Rewards <strong id="rewardText">0</strong></span>
+        <span class="pill"><img class="ui-icon" src="assets/puff_icon.png" alt="">Puffs <strong id="puffText">0</strong></span>
+        <span class="pill">Misses <strong id="missText">0</strong></span>
+        <span class="pill">HP +<strong id="gainText">0.0</strong> / -<strong id="lossText">0.0</strong></span>
+      </div>
+
+      <div class="history" id="historyText">_ _ _ _ _ _</div>
+    </section>
+
+    <section class="canvas-wrap">
+      <canvas id="gameCanvas" width="1280" height="720" aria-label="Mouse continuous odor stream game canvas"></canvas>
+    </section>
+
+    <section class="touch-controls" aria-label="Touch game controls">
+      <button class="touch-action primary" id="touchSniffButton" type="button">START / SNIFF</button>
+      <button class="touch-action reward" id="touchLickButton" type="button">LICK</button>
+      <button class="touch-action defend" id="touchCloseButton" type="button">CLOSE EYES</button>
+    </section>
+    <div class="orientation-note">Rotate to landscape for a larger play area.</div>
+
+    <div class="hint">Controls: Space start/sniff, L lick, C timed eye close, D debug/layout.</div>
+    <section class="debug" id="debugPanel" aria-label="Debug panel"></section>
+  </main>
+
+  <script src="game-config.js"></script>
+  <script src="asset-layout.js"></script>
+  <script>
+    // Fallback defaults. Edit game-config.js for normal tuning.
+    const DEFAULT_CONFIG = {
+      canvasWidth: 1280,
+      canvasHeight: 720,
+
+      odorTravelTimeMs: 1700,
+      interOdorIntervalMs: 450,
+      sniffWindowMs: 300,
+      odorFeedbackMs: 300,
+
+      odorSet: ["A", "B"],
+      visibleHistoryLength: 6,
+
+      waterDurationMs: 100,
+      lickLatencyMs: 20,
+      lickDwellMs: 200,
+      fullRewardHpGain: 10,
+
+      airPuffDurationMs: 100,
+      eyeCloseLatencyMs: 20,
+      eyeCloseDurationMs: 300,
+      fullPuffDamage: 15,
+
+      startingHp: 50,
+      maxHp: 100,
+
+      streamStartDelayMs: 350,
+      outcomeDelayMs: 220,
+
+      audioEnabled: true,
+      bgmVolume: 0.16,
+      sfxVolume: 0.55,
+
+      mobileRenderScale: 0.75,
+      mobileFrameRate: 30,
+      desktopFrameRate: 60,
+      idleFrameRate: 5
+    };
+
+    const LEVELS = window.ABA_GAME_LEVELS || {};
+    const REQUESTED_LEVEL_ID = window.ABA_CURRENT_LEVEL_ID || "default";
+    const ACTIVE_LEVEL_ID = LEVELS[REQUESTED_LEVEL_ID] ? REQUESTED_LEVEL_ID : "default";
+    const ACTIVE_LEVEL = LEVELS[ACTIVE_LEVEL_ID] || { label: "Default tuning", config: {} };
+    const ACTIVE_LEVEL_LABEL = ACTIVE_LEVEL.label || ACTIVE_LEVEL_ID;
+    const ACTIVE_LEVEL_CONFIG = ACTIVE_LEVEL.config || {};
+    const CONFIG = {
+      ...DEFAULT_CONFIG,
+      ...(window.ABA_GAME_CONFIG || {}),
+      ...ACTIVE_LEVEL_CONFIG
+    };
+
+    const DEBUG_CONFIG_KEYS = [
+      "canvasWidth",
+      "canvasHeight",
+      "odorTravelTimeMs",
+      "interOdorIntervalMs",
+      "sniffWindowMs",
+      "odorFeedbackMs",
+      "streamStartDelayMs",
+      "outcomeDelayMs",
+      "odorSet",
+      "visibleHistoryLength",
+      "waterDurationMs",
+      "lickLatencyMs",
+      "lickDwellMs",
+      "fullRewardHpGain",
+      "airPuffDurationMs",
+      "eyeCloseLatencyMs",
+      "eyeCloseDurationMs",
+      "fullPuffDamage",
+      "startingHp",
+      "maxHp",
+      "audioEnabled",
+      "bgmVolume",
+      "sfxVolume"
+    ];
+
+    const STATE = {
+      IDLE: "IDLE",
+      STREAM_START: "STREAM_START",
+      ODOR_MOVING: "ODOR_MOVING",
+      SNIFF_WINDOW: "SNIFF_WINDOW",
+      ODOR_FEEDBACK: "ODOR_FEEDBACK",
+      OUTCOME_PENDING: "OUTCOME_PENDING",
+      REWARD_ACTIVE: "REWARD_ACTIVE",
+      AIR_PUFF_ACTIVE: "AIR_PUFF_ACTIVE",
+      NO_OUTCOME: "NO_OUTCOME",
+      STREAM_GAP: "STREAM_GAP",
+      GAME_OVER: "GAME_OVER"
+    };
+
+    const canvas = document.getElementById("gameCanvas");
+    const IS_TOUCH_DEVICE = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+    const RENDER_SCALE = IS_TOUCH_DEVICE ? clamp(CONFIG.mobileRenderScale, 0.5, 1) : 1;
+    canvas.width = Math.round(CONFIG.canvasWidth * RENDER_SCALE);
+    canvas.height = Math.round(CONFIG.canvasHeight * RENDER_SCALE);
+    canvas.style.aspectRatio = `${CONFIG.canvasWidth} / ${CONFIG.canvasHeight}`;
+    let ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+
+    const staticScene = {
+      canvas: document.createElement("canvas"),
+      ctx: null,
+      dirty: true
+    };
+    staticScene.canvas.width = canvas.width;
+    staticScene.canvas.height = canvas.height;
+    staticScene.ctx = staticScene.canvas.getContext("2d", { alpha: false, desynchronized: true });
+    staticScene.ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+
+    const ui = {
+      startButton: document.getElementById("startButton"),
+      resetButton: document.getElementById("resetButton"),
+      soundButton: document.getElementById("soundButton"),
+      touchSniffButton: document.getElementById("touchSniffButton"),
+      touchLickButton: document.getElementById("touchLickButton"),
+      touchCloseButton: document.getElementById("touchCloseButton"),
+      hpFill: document.getElementById("hpFill"),
+      hpText: document.getElementById("hpText"),
+      odorText: document.getElementById("odorText"),
+      rewardText: document.getElementById("rewardText"),
+      puffText: document.getElementById("puffText"),
+      missText: document.getElementById("missText"),
+      gainText: document.getElementById("gainText"),
+      lossText: document.getElementById("lossText"),
+      historyText: document.getElementById("historyText"),
+      debugPanel: document.getElementById("debugPanel")
+    };
+
+    const layoutTuning = window.ABA_ASSET_LAYOUT || {};
+
+    const DEFAULT_RIG = {
+      tubeStartX: 130,
+      tubeEndX: 1080,
+      tubeY: 323,
+      tubeHeight: 50,
+      mouseX: 640,
+      mouseY: 405,
+      noseX: 604,
+      noseY: 326,
+      mouthX: 612,
+      mouthY: 382,
+      waterTubeX: 554,
+      waterTubeY: 390
+    };
+
+    const ASSET_SOURCES = {
+      backgroundLab: "assets/background_lab.png",
+      mouseBody: "assets/mouse_body.png",
+      mouseEyesOpen: "assets/mouse_eyes_open.png",
+      mouseEyesClosed: "assets/mouse_eyes_closed.png",
+      platform: "assets/platform.png",
+      transparentTube: "assets/transparent_tube.png",
+      odorPacket: "assets/odor_packet.png",
+      waterDrop: "assets/water_drop.png",
+      tongueIdle: "assets/tongue_idle.png",
+      tongueExtended: "assets/tongue_extended.png",
+      airPuffParticles: "assets/air_puff_particles.png",
+      aBubble: "assets/A_bubble.png",
+      bBubble: "assets/B_bubble.png",
+      questionBubble: "assets/question_bubble.png"
+    };
+
+    const DEFAULT_ART_LAYOUT = {
+      backgroundLab: { x: 155, y: 54, width: 970 },
+      platform: { x: 330, y: 482, width: 620 },
+      transparentTube: { x: 70, y: 252, width: 1140 },
+      mouseBody: { x: 440, y: 138, width: 350 },
+      mouseEyesOpen: { x: 540, y: 226, width: 145 },
+      mouseEyesClosed: { x: 526, y: 230, width: 185 },
+      odorPacket: { width: 180 },
+      waterDrop: { x: 472, y: 305, width: 96 },
+      tongueIdle: { x: 555, y: 352, width: 105 },
+      tongueExtended: { x: 498, y: 354, width: 150 },
+      airPuffParticles: { x: 555, y: 242, width: 430 },
+      labelBubble: { x: 570, y: 112, width: 140 }
+    };
+
+    function mergeLayoutDefaults(defaults, overrides = {}) {
+      return Object.fromEntries(
+        Object.entries(defaults).map(([key, value]) => [
+          key,
+          { ...value, ...(overrides[key] || {}) }
+        ])
+      );
+    }
+
+    function pxValue(value) {
+      return Number.isFinite(value) ? `${value}px` : null;
+    }
+
+    function applyUiIconLayout(uiIcons = {}) {
+      const rootStyle = document.documentElement.style;
+      const statWidth = pxValue(uiIcons.stat && uiIcons.stat.width);
+      const statHeight = pxValue(uiIcons.stat && uiIcons.stat.height);
+      const hpWidth = pxValue(uiIcons.hp && uiIcons.hp.width);
+      const hpHeight = pxValue(uiIcons.hp && uiIcons.hp.height);
+
+      if (statWidth) rootStyle.setProperty("--ui-icon-width", statWidth);
+      if (statHeight) rootStyle.setProperty("--ui-icon-height", statHeight);
+      if (hpWidth) rootStyle.setProperty("--hp-icon-width", hpWidth);
+      if (hpHeight) rootStyle.setProperty("--hp-icon-height", hpHeight);
+    }
+
+    const rig = { ...DEFAULT_RIG, ...(layoutTuning.rig || {}) };
+    const artLayout = mergeLayoutDefaults(DEFAULT_ART_LAYOUT, layoutTuning.artLayout);
+    applyUiIconLayout(layoutTuning.uiIcons);
+
+    const art = {};
+    for (const [key, src] of Object.entries(ASSET_SOURCES)) {
+      const image = new Image();
+      image.addEventListener("load", () => {
+        staticScene.dirty = true;
+        requestImmediateFrame();
+      });
+      image.src = src;
+      art[key] = image;
+    }
+
+    const DEBUG_ART_LAYOUT_ITEMS = [
+      { label: "backgroundLab", key: "backgroundLab", layoutKey: "backgroundLab", color: "#287c8f" },
+      { label: "platform", key: "platform", layoutKey: "platform", color: "#287c8f" },
+      { label: "transparentTube", key: "transparentTube", layoutKey: "transparentTube", color: "#287c8f" },
+      { label: "mouseBody", key: "mouseBody", layoutKey: "mouseBody", color: "#148c5a" },
+      { label: "mouseEyesOpen", key: "mouseEyesOpen", layoutKey: "mouseEyesOpen", color: "#148c5a" },
+      { label: "mouseEyesClosed", key: "mouseEyesClosed", layoutKey: "mouseEyesClosed", color: "#148c5a" },
+      { label: "tongueIdle", key: "tongueIdle", layoutKey: "tongueIdle", color: "#148c5a" },
+      { label: "tongueExtended", key: "tongueExtended", layoutKey: "tongueExtended", color: "#148c5a" },
+      { label: "waterDrop", key: "waterDrop", layoutKey: "waterDrop", color: "#287c8f" },
+      { label: "airPuffParticles", key: "airPuffParticles", layoutKey: "airPuffParticles", color: "#b74343" },
+      { label: "labelBubble", key: "aBubble", layoutKey: "labelBubble", color: "#8a4bb3" }
+    ];
+
+    const game = {
+      state: STATE.IDLE,
+      stateStartedAt: performance.now(),
+      running: false,
+      debug: false,
+
+      hp: CONFIG.startingHp,
+      odorCount: 0,
+      rewardCount: 0,
+      puffCount: 0,
+      missCount: 0,
+      totalHpGained: 0,
+      totalHpLost: 0,
+
+      currentTrueOdor: "",
+      previousTrueOdor: "",
+      outcomePreviousOdor: "",
+      outcomeCurrentOdor: "",
+      outcomeKind: "",
+      trueHistory: [],
+      visibleHistory: [],
+      odorStartAt: 0,
+      noseArrivalAt: 0,
+      sniffWindowStart: 0,
+      sniffWindowEnd: 0,
+      sniffHandled: false,
+      lastOdorLabel: "",
+      sniffFeedbackKind: "",
+
+      feedbackText: "Press Start",
+      feedbackUntil: 0,
+
+      waterWindow: null,
+      puffWindow: null,
+      latestRewardCalc: null,
+      latestPuffCalc: null,
+
+      lickIntervals: [],
+      eyeCloseUsedForOdor: false,
+      eyeClosedIntervals: []
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function getOverlapMs(start1, end1, start2, end2) {
+      return Math.max(0, Math.min(end1, end2) - Math.max(start1, start2));
+    }
+
+    function formatMs(value) {
+      if (value == null || Number.isNaN(value)) return "-";
+      return `${Math.round(value)} ms`;
+    }
+
+    function formatLayoutValue(layout) {
+      if (!layout) return "-";
+      const parts = [];
+      for (const key of ["x", "y", "width", "height"]) {
+        if (Number.isFinite(layout[key])) parts.push(`${key} ${layout[key]}`);
+      }
+      return parts.join(", ") || "-";
+    }
+
+    function formatConfigValue(value) {
+      return Array.isArray(value) ? `[${value.join(", ")}]` : String(value);
+    }
+
+    const AUDIO_SOURCES = {
+      bgm: "assets/audio/bgm.wav",
+      start: "assets/audio/start.wav",
+      odor: "assets/audio/odor.wav",
+      sniffHit: "assets/audio/sniff_hit.wav",
+      sniffMiss: "assets/audio/sniff_miss.wav",
+      lick: "assets/audio/lick.wav",
+      eyeClose: "assets/audio/eye_close.wav",
+      reward: "assets/audio/reward.wav",
+      miss: "assets/audio/reward_miss.wav",
+      puff: "assets/audio/air_puff.wav",
+      gameOver: "assets/audio/game_over.wav"
+    };
+
+    const audio = {
+      enabled: CONFIG.audioEnabled !== false,
+      muted: false,
+      bgmActive: false,
+      bgm: null,
+      sfx: {}
+    };
+
+    if (audio.enabled) {
+      audio.bgm = new Audio(AUDIO_SOURCES.bgm);
+      audio.bgm.loop = true;
+      audio.bgm.preload = "auto";
+      audio.bgm.volume = clamp(CONFIG.bgmVolume, 0, 1);
+
+      for (const [kind, src] of Object.entries(AUDIO_SOURCES)) {
+        if (kind === "bgm") continue;
+        const sound = new Audio(src);
+        sound.preload = "auto";
+        sound.volume = clamp(CONFIG.sfxVolume, 0, 1);
+        audio.sfx[kind] = sound;
+      }
+    }
+
+    function updateSoundButton() {
+      if (!ui.soundButton) return;
+      ui.soundButton.textContent = audio.enabled && !audio.muted ? "Sound On" : "Sound Off";
+    }
+
+    function unlockAudio() {
+      if (!audio.enabled || !audio.bgm) return;
+      audio.bgm.load();
+      for (const sound of Object.values(audio.sfx)) {
+        sound.load();
+      }
+    }
+
+    function setBgmActive(active) {
+      audio.bgmActive = Boolean(active && audio.enabled && !audio.muted);
+      if (audio.bgm) {
+        if (audio.bgmActive) {
+          audio.bgm.play().catch(() => {});
+        } else {
+          audio.bgm.pause();
+        }
+      }
+      updateSoundButton();
+    }
+
+    function toggleSound() {
+      audio.muted = !audio.muted;
+      if (!audio.muted) {
+        unlockAudio();
+      }
+
+      if (game.running && game.state !== STATE.GAME_OVER) {
+        setBgmActive(!audio.muted);
+      } else {
+        updateSoundButton();
+      }
+    }
+
+    function playSfx(kind) {
+      if (!audio.enabled || audio.muted || !audio.sfx[kind]) return;
+
+      const sound = audio.sfx[kind];
+      sound.volume = clamp(CONFIG.sfxVolume, 0, 1);
+      try {
+        sound.pause();
+        sound.currentTime = 0;
+      } catch (error) {
+        // Some mobile browsers reject seeking before metadata is ready.
+      }
+      sound.play().catch(() => {});
+    }
+
+    function setState(nextState, now) {
+      game.state = nextState;
+      game.stateStartedAt = now;
+
+      if (nextState === STATE.REWARD_ACTIVE) {
+        game.puffWindow = null;
+        game.waterWindow = {
+          start: now,
+          end: now + CONFIG.waterDurationMs
+        };
+        game.latestRewardCalc = null;
+      }
+
+      if (nextState === STATE.AIR_PUFF_ACTIVE) {
+        game.waterWindow = null;
+        game.puffWindow = {
+          start: now,
+          end: now + CONFIG.airPuffDurationMs
+        };
+        game.latestPuffCalc = null;
+        playSfx("puff");
+      }
+    }
+
+    function setFeedback(text, now, durationMs = 1200) {
+      game.feedbackText = text;
+      game.feedbackUntil = now + durationMs;
+    }
+
+    function randomOdor() {
+      const index = Math.floor(Math.random() * CONFIG.odorSet.length);
+      return CONFIG.odorSet[index];
+    }
+
+    function addVisibleHistory(symbol) {
+      game.visibleHistory.push(symbol);
+      if (game.visibleHistory.length > CONFIG.visibleHistoryLength) {
+        game.visibleHistory.shift();
+      }
+    }
+
+    function formatVisibleHistory() {
+      const padded = [...game.visibleHistory];
+      while (padded.length < CONFIG.visibleHistoryLength) {
+        padded.unshift("_");
+      }
+      return padded.join(" ");
+    }
+
+    function resetGame(now = performance.now()) {
+      game.state = STATE.IDLE;
+      game.stateStartedAt = now;
+      game.running = false;
+      game.hp = CONFIG.startingHp;
+      game.odorCount = 0;
+      game.rewardCount = 0;
+      game.puffCount = 0;
+      game.missCount = 0;
+      game.totalHpGained = 0;
+      game.totalHpLost = 0;
+      game.currentTrueOdor = "";
+      game.previousTrueOdor = "";
+      game.outcomePreviousOdor = "";
+      game.outcomeCurrentOdor = "";
+      game.outcomeKind = "";
+      game.trueHistory = [];
+      game.visibleHistory = [];
+      game.odorStartAt = 0;
+      game.noseArrivalAt = 0;
+      game.sniffWindowStart = 0;
+      game.sniffWindowEnd = 0;
+      game.sniffHandled = false;
+      game.lastOdorLabel = "";
+      game.sniffFeedbackKind = "";
+      game.waterWindow = null;
+      game.puffWindow = null;
+      game.latestRewardCalc = null;
+      game.latestPuffCalc = null;
+      game.lickIntervals = [];
+      game.eyeCloseUsedForOdor = false;
+      game.eyeClosedIntervals = [];
+      setBgmActive(false);
+      setFeedback("Press Start", now, 1000000);
+      syncUi();
+    }
+
+    function startGame() {
+      const now = performance.now();
+      if (game.running) return;
+      if (game.state === STATE.GAME_OVER) return;
+      unlockAudio();
+      game.running = true;
+      setBgmActive(true);
+      playSfx("start");
+      startStream(now);
+    }
+
+    function startStream(now) {
+      game.lastOdorLabel = "";
+      game.waterWindow = null;
+      game.puffWindow = null;
+      game.latestRewardCalc = null;
+      game.latestPuffCalc = null;
+      game.lickIntervals = game.lickIntervals.filter(interval => interval.end > now - 2000);
+      setFeedback("Odor stream started", now, 650);
+      setState(STATE.STREAM_START, now);
+    }
+
+    function startOdor(now) {
+      game.odorCount += 1;
+      game.currentTrueOdor = randomOdor();
+      game.trueHistory.push(game.currentTrueOdor);
+      if (game.trueHistory.length > CONFIG.visibleHistoryLength) {
+        game.trueHistory.shift();
+      }
+      game.waterWindow = null;
+      game.puffWindow = null;
+      game.odorStartAt = now;
+      game.noseArrivalAt = now + CONFIG.odorTravelTimeMs;
+      game.sniffWindowStart = game.noseArrivalAt - CONFIG.sniffWindowMs;
+      game.sniffWindowEnd = game.noseArrivalAt + CONFIG.sniffWindowMs;
+      game.sniffHandled = false;
+      game.eyeCloseUsedForOdor = false;
+      game.lastOdorLabel = "";
+      game.sniffFeedbackKind = "";
+      playSfx("odor");
+      setState(STATE.ODOR_MOVING, now);
+    }
+
+    function handleSniff(now) {
+      const canSniffCurrentOdor = [STATE.ODOR_MOVING, STATE.SNIFF_WINDOW].includes(game.state);
+      const inSniffWindow = now >= game.sniffWindowStart && now <= game.sniffWindowEnd;
+
+      if (!canSniffCurrentOdor || !inSniffWindow || game.sniffHandled) {
+        return;
+      }
+
+      game.sniffHandled = true;
+      const odor = game.currentTrueOdor;
+      addVisibleHistory(odor);
+      game.lastOdorLabel = odor;
+      game.sniffFeedbackKind = "hit";
+      playSfx("sniffHit");
+      setFeedback(`Sniff hit: ${odor}`, now);
+      setState(STATE.ODOR_FEEDBACK, now);
+    }
+
+    function missCurrentOdor(now) {
+      game.sniffHandled = true;
+      addVisibleHistory("?");
+      game.lastOdorLabel = "?";
+      game.sniffFeedbackKind = "miss";
+      game.missCount += 1;
+      playSfx("sniffMiss");
+      setFeedback("Sniff miss", now);
+      setState(STATE.ODOR_FEEDBACK, now);
+    }
+
+    function requestLick(now) {
+      const last = game.lickIntervals[game.lickIntervals.length - 1];
+      if (last && now < last.end) {
+        return;
+      }
+
+      game.lickIntervals.push({
+        keyAt: now,
+        start: now + CONFIG.lickLatencyMs,
+        end: now + CONFIG.lickLatencyMs + CONFIG.lickDwellMs
+      });
+      playSfx("lick");
+
+      game.lickIntervals = game.lickIntervals.filter(interval => interval.end > now - 3000);
+    }
+
+    function requestEyeClose(now) {
+      const canUseForCurrentOdor = game.running && [
+        STATE.ODOR_MOVING,
+        STATE.SNIFF_WINDOW,
+        STATE.ODOR_FEEDBACK,
+        STATE.OUTCOME_PENDING,
+        STATE.REWARD_ACTIVE,
+        STATE.AIR_PUFF_ACTIVE,
+        STATE.NO_OUTCOME
+      ].includes(game.state);
+
+      if (!canUseForCurrentOdor) {
+        return;
+      }
+
+      if (game.eyeCloseUsedForOdor) {
+        setFeedback("Eye close already used for this odor", now, 500);
+        return;
+      }
+
+      const start = now + CONFIG.eyeCloseLatencyMs;
+      const end = start + CONFIG.eyeCloseDurationMs;
+      game.eyeCloseUsedForOdor = true;
+      game.eyeClosedIntervals.push({ start, end });
+      game.eyeClosedIntervals = game.eyeClosedIntervals.filter(interval => interval.end > now - 3000);
+      playSfx("eyeClose");
+      setFeedback(`Eyes closing for ${Math.round(CONFIG.eyeCloseDurationMs)} ms`, now, 500);
+    }
+
+    function getActiveEyeClosedInterval(now) {
+      return game.eyeClosedIntervals.find(interval => now >= interval.start && now <= interval.end) || null;
+    }
+
+    function collectEyeIntervalsForWindow(now) {
+      return game.eyeClosedIntervals.filter(interval => interval.end > now - 3000);
+    }
+
+    function calculateBestLickOverlap(water) {
+      let bestOverlap = 0;
+      let bestLick = null;
+
+      if (!water) {
+        return { bestOverlap, bestLick };
+      }
+
+      for (const lick of game.lickIntervals) {
+        const overlap = getOverlapMs(water.start, water.end, lick.start, lick.end);
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          bestLick = lick;
+        }
+      }
+
+      return { bestOverlap, bestLick };
+    }
+
+    function calculateEyePuffOverlap(puff, now) {
+      if (!puff) {
+        return { eyeOverlapMs: 0, eyeIntervals: [] };
+      }
+
+      let totalOverlap = 0;
+      const eyeIntervals = collectEyeIntervalsForWindow(now);
+
+      for (const interval of eyeIntervals) {
+        const observedEnd = Math.min(interval.end, now);
+        if (observedEnd > interval.start) {
+          totalOverlap += getOverlapMs(puff.start, puff.end, interval.start, observedEnd);
+        }
+      }
+
+      return {
+        eyeOverlapMs: clamp(totalOverlap, 0, CONFIG.airPuffDurationMs),
+        eyeIntervals
+      };
+    }
+
+    function resolveReward(now) {
+      const water = game.waterWindow;
+      const { bestOverlap, bestLick } = calculateBestLickOverlap(water);
+
+      const rewardFraction = bestOverlap / CONFIG.waterDurationMs;
+      const hpGain = CONFIG.fullRewardHpGain * rewardFraction;
+      game.hp = clamp(game.hp + hpGain, 0, CONFIG.maxHp);
+      game.totalHpGained += hpGain;
+
+      if (bestOverlap > 0) {
+        game.rewardCount += 1;
+        playSfx("reward");
+        setFeedback(`Reward: overlap ${Math.round(bestOverlap)} ms, +${hpGain.toFixed(1)} HP`, now);
+      } else {
+        playSfx("miss");
+        setFeedback("Reward missed: no lick-water overlap", now);
+      }
+
+      game.latestRewardCalc = {
+        water,
+        bestLick,
+        overlapMs: bestOverlap,
+        rewardFraction,
+        hpGain
+      };
+    }
+
+    function resolvePuff(now) {
+      const puff = game.puffWindow;
+      const { eyeOverlapMs, eyeIntervals } = calculateEyePuffOverlap(puff, now);
+      const avoidFraction = eyeOverlapMs / CONFIG.airPuffDurationMs;
+      const damageFraction = 1 - avoidFraction;
+      const damage = CONFIG.fullPuffDamage * damageFraction;
+
+      game.puffCount += 1;
+      game.hp = clamp(game.hp - damage, 0, CONFIG.maxHp);
+      game.totalHpLost += damage;
+
+      if (eyeOverlapMs === 0) {
+        setFeedback(`Puff hit: -${damage.toFixed(1)} HP`, now);
+      } else {
+        setFeedback(`Puff avoided: overlap ${Math.round(eyeOverlapMs)} ms, damage -${damage.toFixed(1)} HP`, now);
+      }
+
+      game.latestPuffCalc = {
+        puff,
+        eyeIntervals,
+        eyeOverlapMs,
+        avoidFraction,
+        damageFraction,
+        damage
+      };
+
+      if (game.hp <= 0) {
+        game.running = false;
+        setBgmActive(false);
+        playSfx("gameOver");
+        setState(STATE.GAME_OVER, now);
+        setFeedback("Game Over", now, 1000000);
+      }
+    }
+
+    function finishCurrentOdorOutcome(now) {
+      game.previousTrueOdor = game.currentTrueOdor;
+      if (game.state !== STATE.GAME_OVER) {
+        setState(STATE.STREAM_GAP, now);
+      }
+    }
+
+    function chooseOutcomeForCurrentOdor(now) {
+      game.outcomePreviousOdor = game.previousTrueOdor || "-";
+      game.outcomeCurrentOdor = game.currentTrueOdor || "-";
+
+      if (!game.previousTrueOdor) {
+        game.outcomeKind = "first odor";
+        game.previousTrueOdor = game.currentTrueOdor;
+        setFeedback("First odor: no outcome", now);
+        setState(STATE.NO_OUTCOME, now);
+        return;
+      }
+
+      if (game.currentTrueOdor === game.previousTrueOdor) {
+        game.outcomeKind = "same -> reward";
+        setState(STATE.REWARD_ACTIVE, now);
+      } else {
+        game.outcomeKind = "different -> puff";
+        setState(STATE.AIR_PUFF_ACTIVE, now);
+      }
+    }
+
+    function update(now) {
+      const elapsed = now - game.stateStartedAt;
+
+      switch (game.state) {
+        case STATE.STREAM_START:
+          if (elapsed > CONFIG.streamStartDelayMs) startOdor(now);
+          break;
+
+        case STATE.ODOR_MOVING:
+          if (now >= game.sniffWindowStart) setState(STATE.SNIFF_WINDOW, now);
+          break;
+
+        case STATE.SNIFF_WINDOW:
+          if (now > game.sniffWindowEnd && !game.sniffHandled) missCurrentOdor(now);
+          break;
+
+        case STATE.ODOR_FEEDBACK:
+          if (elapsed > CONFIG.odorFeedbackMs && (game.sniffFeedbackKind !== "miss" || now >= odorPacketExitAt())) {
+            setState(STATE.OUTCOME_PENDING, now);
+          }
+          break;
+
+        case STATE.OUTCOME_PENDING:
+          if (elapsed > CONFIG.outcomeDelayMs) {
+            chooseOutcomeForCurrentOdor(now);
+          }
+          break;
+
+        case STATE.REWARD_ACTIVE:
+          if (now >= game.waterWindow.end) {
+            resolveReward(now);
+            finishCurrentOdorOutcome(now);
+          }
+          break;
+
+        case STATE.AIR_PUFF_ACTIVE:
+          if (now >= game.puffWindow.end) {
+            resolvePuff(now);
+            finishCurrentOdorOutcome(now);
+          }
+          break;
+
+        case STATE.NO_OUTCOME:
+          if (elapsed > 450) setState(STATE.STREAM_GAP, now);
+          break;
+
+        case STATE.STREAM_GAP:
+          if (elapsed > CONFIG.interOdorIntervalMs) startOdor(now);
+          break;
+      }
+    }
+
+    function odorPacketExitX() {
+      return CONFIG.canvasWidth + artLayout.odorPacket.width / 2;
+    }
+
+    function odorPacketSpeed() {
+      const approachDistance = Math.max(1, rig.noseX - rig.tubeStartX);
+      return approachDistance / Math.max(1, CONFIG.odorTravelTimeMs);
+    }
+
+    function odorPacketExitAt() {
+      const exitDistance = Math.max(0, odorPacketExitX() - rig.noseX);
+      return game.noseArrivalAt + exitDistance / odorPacketSpeed();
+    }
+
+    function odorPacketPosition(now) {
+      const elapsed = Math.max(0, now - game.odorStartAt);
+      const x = rig.tubeStartX + elapsed * odorPacketSpeed();
+      return clamp(x, rig.tubeStartX, odorPacketExitX());
+    }
+
+    function shouldDrawGasPacket(now) {
+      const moving = [STATE.ODOR_MOVING, STATE.SNIFF_WINDOW].includes(game.state);
+      const missedFeedback = game.state === STATE.ODOR_FEEDBACK && game.sniffFeedbackKind === "miss";
+      return (moving || missedFeedback) && now < odorPacketExitAt();
+    }
+
+    function drawRoundedRect(x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + width, y, x + width, y + height, radius);
+      ctx.arcTo(x + width, y + height, x, y + height, radius);
+      ctx.arcTo(x, y + height, x, y, radius);
+      ctx.arcTo(x, y, x + width, y, radius);
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+
+    function isArtReady(key) {
+      const image = art[key];
+      return Boolean(image && image.complete && image.naturalWidth > 0);
+    }
+
+    function imageHeightFor(key, width) {
+      const image = art[key];
+      return width * (image.naturalHeight / image.naturalWidth);
+    }
+
+    function drawArt(key, layout) {
+      if (!isArtReady(key)) return false;
+      const height = layout.height || imageHeightFor(key, layout.width);
+      ctx.drawImage(art[key], layout.x, layout.y, layout.width, height);
+      return true;
+    }
+
+    function drawArtWithAlpha(key, layout, alpha) {
+      if (!isArtReady(key)) return false;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      drawArt(key, layout);
+      ctx.restore();
+      return true;
+    }
+
+    function drawCenteredArt(key, centerX, centerY, width, alpha = 1) {
+      if (!isArtReady(key)) return false;
+      const height = imageHeightFor(key, width);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(art[key], centerX - width / 2, centerY - height / 2, width, height);
+      ctx.restore();
+      return true;
+    }
+
+    function drawMirroredArtWithAlpha(key, layout, alpha) {
+      if (!isArtReady(key)) return false;
+      const height = layout.height || imageHeightFor(key, layout.width);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(layout.x + layout.width, layout.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(art[key], 0, 0, layout.width, height);
+      ctx.restore();
+      return true;
+    }
+
+
+    function drawBackground() {
+      ctx.fillStyle = "#eaf3f6";
+      ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+      ctx.fillStyle = "#d9e8ed";
+      ctx.fillRect(0, 535, CONFIG.canvasWidth, 185);
+
+      if (!drawArt("backgroundLab", artLayout.backgroundLab)) {
+        ctx.strokeStyle = "rgba(73, 101, 116, 0.18)";
+        ctx.lineWidth = 2;
+        for (let x = 80; x < CONFIG.canvasWidth; x += 160) {
+          ctx.beginPath();
+          ctx.moveTo(x, 70);
+          ctx.lineTo(x + 40, 535);
+          ctx.stroke();
+        }
+      }
+
+      if (!drawArt("platform", artLayout.platform)) {
+        drawRoundedRect(430, 490, 390, 56, 20, "#c6d4dc", "#8fa3ad");
+        ctx.fillStyle = "#8fa3ad";
+        ctx.fillRect(460, 545, 42, 90);
+        ctx.fillRect(748, 545, 42, 90);
+      }
+    }
+
+    function drawTube(includeDebug = true) {
+      if (!drawArt("transparentTube", artLayout.transparentTube)) {
+        ctx.save();
+        ctx.globalAlpha = 0.72;
+        drawRoundedRect(rig.tubeStartX, rig.tubeY - rig.tubeHeight / 2, rig.tubeEndX - rig.tubeStartX, rig.tubeHeight, 24, "#dff7ff", "#7aa9b8");
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(rig.tubeStartX + 24, rig.tubeY - 12);
+        ctx.lineTo(rig.tubeEndX - 24, rig.tubeY - 12);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (includeDebug && game.debug) {
+        ctx.strokeStyle = "#d54f4f";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.arc(rig.noseX, rig.noseY, 42, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    function drawGasPacket(now) {
+      if (!shouldDrawGasPacket(now)) return;
+
+      const x = odorPacketPosition(now);
+      const y = rig.tubeY;
+      const color = "#89d9d0";
+
+      if (drawCenteredArt("odorPacket", x, y, artLayout.odorPacket.width, 0.9)) {
+        return;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = 0.74;
+      const gradient = ctx.createRadialGradient(x, y, 6, x, y, 42);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 56, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = color;
+      for (let i = 0; i < 5; i += 1) {
+        const bob = Math.sin((now / 140) + i) * 5;
+        ctx.beginPath();
+        ctx.arc(x - 35 + i * 18, y + bob, 9 - (i % 2) * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawAssetTongue(lick, now) {
+      if (!lick) return;
+
+      const tongueProgress = Math.sin(((now - lick.start) / CONFIG.lickDwellMs) * Math.PI);
+      ctx.strokeStyle = "#e46f8a";
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(rig.mouthX, rig.mouthY);
+      ctx.quadraticCurveTo(
+        rig.waterTubeX + 15 - tongueProgress * 42,
+        rig.waterTubeY + 8,
+        rig.waterTubeX - tongueProgress * 8,
+        rig.waterTubeY + 10
+      );
+      ctx.stroke();
+    }
+
+    function drawActiveAssetTongue(now) {
+      if (!isArtReady("mouseBody")) return;
+
+      const lick = game.lickIntervals.find(interval => now >= interval.start && now <= interval.end);
+      if (lick && drawArt("tongueExtended", artLayout.tongueExtended)) {
+        return;
+      }
+
+      drawAssetTongue(lick, now);
+    }
+
+    function drawMouse(now) {
+      const activeEye = getActiveEyeClosedInterval(now);
+      const eyesClosed = Boolean(activeEye);
+      const lick = game.lickIntervals.find(interval => now >= interval.start && now <= interval.end);
+
+      if (isArtReady("mouseBody")) {
+        drawArt("mouseBody", artLayout.mouseBody);
+        drawArt(eyesClosed ? "mouseEyesClosed" : "mouseEyesOpen", eyesClosed ? artLayout.mouseEyesClosed : artLayout.mouseEyesOpen);
+        drawArt("tongueIdle", artLayout.tongueIdle);
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(rig.mouseX, rig.mouseY);
+
+      ctx.fillStyle = "#c9c1b6";
+      ctx.beginPath();
+      ctx.ellipse(0, 54, 118, 76, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#7f7368";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = "#d8d0c6";
+      ctx.beginPath();
+      ctx.ellipse(-6, -8, 86, 76, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#d8d0c6";
+      ctx.beginPath();
+      ctx.arc(-58, -58, 28, 0, Math.PI * 2);
+      ctx.arc(48, -60, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#f3b9c6";
+      ctx.beginPath();
+      ctx.arc(-58, -58, 16, 0, Math.PI * 2);
+      ctx.arc(48, -60, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#322b28";
+      ctx.beginPath();
+      ctx.arc(-40, -22, 5, 0, Math.PI * 2);
+      ctx.arc(26, -22, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#322b28";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      if (eyesClosed) {
+        ctx.beginPath();
+        ctx.moveTo(-50, -16);
+        ctx.quadraticCurveTo(-40, -25, -30, -16);
+        ctx.moveTo(16, -16);
+        ctx.quadraticCurveTo(26, -25, 36, -16);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "#262323";
+        ctx.beginPath();
+        ctx.arc(-40, -18, 8, 0, Math.PI * 2);
+        ctx.arc(26, -18, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#ef8fa6";
+      ctx.beginPath();
+      ctx.arc(-36, 0, 8, 0, Math.PI * 2);
+      ctx.arc(30, 0, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#2c2523";
+      ctx.beginPath();
+      ctx.ellipse(-36, -80, 16, 10, -0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#5b5049";
+      ctx.lineWidth = 2;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(-38, -77);
+        ctx.lineTo(-38 - side * 70, -98);
+        ctx.moveTo(-38, -72);
+        ctx.lineTo(-38 - side * 76, -68);
+        ctx.stroke();
+      }
+
+      if (lick) {
+        const tongueProgress = Math.sin(((now - lick.start) / CONFIG.lickDwellMs) * Math.PI);
+        ctx.strokeStyle = "#e46f8a";
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(-30, -18);
+        ctx.quadraticCurveTo(-70 - tongueProgress * 24, -8, -90 - tongueProgress * 16, -8);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawWater(now) {
+      const waterActive = game.waterWindow && now >= game.waterWindow.start && now <= game.waterWindow.end;
+
+      if (isArtReady("waterDrop")) {
+        const alpha = waterActive ? 1 : 0.22;
+        if (waterActive) {
+          ctx.save();
+          ctx.shadowColor = "rgba(33, 168, 223, 0.55)";
+          ctx.shadowBlur = 18;
+          drawArtWithAlpha("waterDrop", artLayout.waterDrop, alpha);
+          ctx.restore();
+        } else {
+          drawArtWithAlpha("waterDrop", artLayout.waterDrop, alpha);
+        }
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "#55717c";
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(rig.waterTubeX - 70, rig.waterTubeY);
+      ctx.lineTo(rig.waterTubeX, rig.waterTubeY);
+      ctx.stroke();
+
+      ctx.fillStyle = waterActive ? "#21a8df" : "#8ecbe4";
+      ctx.beginPath();
+      ctx.moveTo(rig.waterTubeX - 2, rig.waterTubeY + 8);
+      ctx.quadraticCurveTo(rig.waterTubeX + 16, rig.waterTubeY + 32, rig.waterTubeX - 4, rig.waterTubeY + 44);
+      ctx.quadraticCurveTo(rig.waterTubeX - 22, rig.waterTubeY + 30, rig.waterTubeX - 2, rig.waterTubeY + 8);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPuff(now) {
+      const active = game.state === STATE.AIR_PUFF_ACTIVE && game.puffWindow;
+      const recentlyResolved = game.latestPuffCalc && now - game.stateStartedAt < 900;
+      if (!active && !recentlyResolved) return;
+
+      const baseProgress = game.puffWindow
+        ? clamp((now - game.puffWindow.start) / CONFIG.airPuffDurationMs, 0, 1)
+        : 1;
+
+      if (isArtReady("airPuffParticles")) {
+        const surge = active ? baseProgress * 95 : 95;
+        const alpha = active ? 0.92 : 0.45;
+        drawMirroredArtWithAlpha("airPuffParticles", {
+          x: artLayout.airPuffParticles.x - surge,
+          y: artLayout.airPuffParticles.y,
+          width: artLayout.airPuffParticles.width
+        }, alpha);
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "#9aa7ad";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      for (let i = 0; i < 12; i += 1) {
+        const offset = i * 18;
+        const x = 870 - baseProgress * 280 - offset;
+        const y = 306 + Math.sin((now / 80) + i) * 28;
+        ctx.globalAlpha = clamp(1 - baseProgress * 0.4, 0.2, 1);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 26, y - 12, x - 52, y + 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawOdorLabel() {
+      if (!game.lastOdorLabel) return;
+
+      const label = game.lastOdorLabel;
+      const bubbleKey = label === "A" ? "aBubble" : label === "B" ? "bBubble" : "questionBubble";
+      if (drawArt(bubbleKey, artLayout.labelBubble)) {
+        return;
+      }
+
+      const fill = label === "?" ? "#fff2c8" : "#ffffff";
+      drawRoundedRect(rig.mouseX - 44, 165, 88, 60, 16, fill, "#6d7f8a");
+      ctx.fillStyle = label === "A" ? "#1680a1" : label === "B" ? "#8a4bb3" : "#8a6d1e";
+      ctx.font = "800 38px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, rig.mouseX, 196);
+    }
+
+    function layoutHeightFor(key, layout) {
+      if (Number.isFinite(layout.height)) return layout.height;
+      if (Number.isFinite(layout.width) && isArtReady(key)) return imageHeightFor(key, layout.width);
+      return Number.isFinite(layout.width) ? layout.width * 0.6 : 0;
+    }
+
+    function drawDebugLabel(text, x, y, color) {
+      ctx.save();
+      ctx.font = "700 12px Arial, Helvetica, sans-serif";
+      ctx.textBaseline = "middle";
+      const paddingX = 5;
+      const height = 18;
+      const width = ctx.measureText(text).width + paddingX * 2;
+      const labelX = clamp(x, 4, CONFIG.canvasWidth - width - 4);
+      const labelY = clamp(y, 4, CONFIG.canvasHeight - height - 4);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+      ctx.fillRect(labelX, labelY, width, height);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(labelX, labelY, width, height);
+      ctx.fillStyle = color;
+      ctx.fillText(text, labelX + paddingX, labelY + height / 2);
+      ctx.restore();
+    }
+
+    function drawDebugBox(label, key, layout, color) {
+      if (!layout || !Number.isFinite(layout.x) || !Number.isFinite(layout.y) || !Number.isFinite(layout.width)) {
+        return;
+      }
+
+      const height = layoutHeightFor(key, layout);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.strokeRect(layout.x, layout.y, layout.width, height);
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      drawDebugLabel(
+        `${label} x${Math.round(layout.x)} y${Math.round(layout.y)} w${Math.round(layout.width)} h${Math.round(height)}`,
+        layout.x,
+        layout.y - 21,
+        color
+      );
+    }
+
+    function drawCenteredDebugBox(label, key, centerX, centerY, width, color) {
+      if (!Number.isFinite(centerX) || !Number.isFinite(centerY) || !Number.isFinite(width)) return;
+      const height = isArtReady(key) ? imageHeightFor(key, width) : width * 0.45;
+      drawDebugBox(label, key, {
+        x: centerX - width / 2,
+        y: centerY - height / 2,
+        width,
+        height
+      }, color);
+    }
+
+    function drawDebugPoint(label, x, y, color) {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - 12, y);
+      ctx.lineTo(x + 12, y);
+      ctx.moveTo(x, y - 12);
+      ctx.lineTo(x, y + 12);
+      ctx.stroke();
+      ctx.restore();
+
+      drawDebugLabel(`${label} ${Math.round(x)},${Math.round(y)}`, x + 10, y + 10, color);
+    }
+
+    function drawLayoutDebugOverlay(now) {
+      if (!game.debug) return;
+
+      for (const item of DEBUG_ART_LAYOUT_ITEMS) {
+        drawDebugBox(item.label, item.key, artLayout[item.layoutKey], item.color);
+      }
+
+      if (shouldDrawGasPacket(now)) {
+        const odorX = odorPacketPosition(now);
+        drawCenteredDebugBox("odorPacket", "odorPacket", odorX, rig.tubeY, artLayout.odorPacket.width, "#ba7a10");
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "#d54f4f";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 6]);
+      ctx.beginPath();
+      ctx.moveTo(rig.tubeStartX, rig.tubeY);
+      ctx.lineTo(rig.tubeEndX, rig.tubeY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      drawDebugPoint("tubeStart", rig.tubeStartX, rig.tubeY, "#d54f4f");
+      drawDebugPoint("tubeEnd", rig.tubeEndX, rig.tubeY, "#d54f4f");
+      drawDebugPoint("nose", rig.noseX, rig.noseY, "#d54f4f");
+      drawDebugPoint("mouth", rig.mouthX, rig.mouthY, "#148c5a");
+      drawDebugPoint("waterTube", rig.waterTubeX, rig.waterTubeY, "#287c8f");
+    }
+
+    function drawFeedback(now) {
+      const visible = now < game.feedbackUntil || game.state === STATE.GAME_OVER || game.state === STATE.IDLE;
+      if (!visible) return;
+
+      drawRoundedRect(380, 38, 520, 54, 12, "rgba(255, 255, 255, 0.9)", "#9bb0bb");
+      ctx.fillStyle = game.state === STATE.GAME_OVER ? "#b74343" : "#1f2630";
+      ctx.font = "800 24px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(game.feedbackText, 640, 66);
+    }
+
+    function drawStateBadges(now) {
+      const sniffActive = game.state === STATE.SNIFF_WINDOW;
+      const waterActive = game.waterWindow && now >= game.waterWindow.start && now <= game.waterWindow.end;
+      const puffActive = game.puffWindow && now >= game.puffWindow.start && now <= game.puffWindow.end;
+
+      const badges = [
+        { label: sniffActive ? "SNIFF" : "sniff", color: sniffActive ? "#287c8f" : "#8ea0aa" },
+        { label: waterActive ? "WATER" : "water", color: waterActive ? "#148c5a" : "#8ea0aa" },
+        { label: puffActive ? "PUFF" : "puff", color: puffActive ? "#b74343" : "#8ea0aa" }
+      ];
+
+      badges.forEach((badge, index) => {
+        const x = 40 + index * 112;
+        drawRoundedRect(x, 625, 94, 38, 8, "#ffffff", badge.color);
+        ctx.fillStyle = badge.color;
+        ctx.font = "800 17px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(badge.label, x + 47, 644);
+      });
+    }
+
+    function drawGameOver() {
+      if (game.state !== STATE.GAME_OVER) return;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(31, 38, 48, 0.56)";
+      ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 64px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("GAME OVER", 640, 330);
+      ctx.font = "700 24px Arial, Helvetica, sans-serif";
+      ctx.fillText("Press Reset to try again", 640, 388);
+      ctx.restore();
+    }
+
+    function renderStaticScene() {
+      if (!staticScene.dirty) return;
+
+      const screenCtx = ctx;
+      ctx = staticScene.ctx;
+      ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+      ctx.clearRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+      drawBackground();
+      ctx = screenCtx;
+      staticScene.dirty = false;
+    }
+
+    function render(now) {
+      renderStaticScene();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(staticScene.canvas, 0, 0);
+      ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+      drawMouse(now);
+      drawTube(true);
+      drawGasPacket(now);
+      drawWater(now);
+      drawActiveAssetTongue(now);
+      drawPuff(now);
+      drawOdorLabel();
+      drawLayoutDebugOverlay(now);
+      drawStateBadges(now);
+      drawFeedback(now);
+      drawGameOver();
+    }
+
+    const uiCache = {};
+
+    function setCachedText(key, element, value) {
+      if (uiCache[key] === value) return;
+      element.textContent = value;
+      uiCache[key] = value;
+    }
+
+    function setCachedStyle(key, element, property, value) {
+      if (uiCache[key] === value) return;
+      element.style[property] = value;
+      uiCache[key] = value;
+    }
+
+    function syncUi() {
+      setCachedStyle("hpWidth", ui.hpFill, "width", `${(game.hp / CONFIG.maxHp) * 100}%`);
+      setCachedText("hpText", ui.hpText, `${game.hp.toFixed(1)}/${CONFIG.maxHp}`);
+      setCachedText("odorText", ui.odorText, String(game.odorCount));
+      setCachedText("rewardText", ui.rewardText, String(game.rewardCount));
+      setCachedText("puffText", ui.puffText, String(game.puffCount));
+      setCachedText("missText", ui.missText, String(game.missCount));
+      setCachedText("gainText", ui.gainText, game.totalHpGained.toFixed(1));
+      setCachedText("lossText", ui.lossText, game.totalHpLost.toFixed(1));
+      setCachedText("historyText", ui.historyText, formatVisibleHistory());
+    }
+
+    let debugPanelVisible = null;
+    let lastDebugSyncAt = 0;
+
+    function syncDebug(now) {
+      if (debugPanelVisible !== game.debug) {
+        ui.debugPanel.classList.toggle("is-visible", game.debug);
+        debugPanelVisible = game.debug;
+        lastDebugSyncAt = 0;
+      }
+      if (!game.debug) return;
+      if (now - lastDebugSyncAt < 100) return;
+      lastDebugSyncAt = now;
+
+      const activeEye = getActiveEyeClosedInterval(now);
+      const recentLicks = game.lickIntervals
+        .slice(-4)
+        .map((lick, index) => `  ${index + 1}. key ${formatMs(lick.keyAt)}, dwell ${formatMs(lick.start)} - ${formatMs(lick.end)}`)
+        .join("\n") || "  none";
+
+      const eyeIntervals = collectEyeIntervalsForWindow(now)
+        .slice(-4)
+        .map((interval, index) => `  ${index + 1}. ${formatMs(interval.start)} - ${formatMs(interval.end)}`)
+        .join("\n") || "  none";
+
+      const reward = game.latestRewardCalc;
+      const puff = game.latestPuffCalc;
+      const liveReward = game.waterWindow ? calculateBestLickOverlap(game.waterWindow) : null;
+      const liveRewardFraction = liveReward ? liveReward.bestOverlap / CONFIG.waterDurationMs : 0;
+      const livePuff = game.puffWindow ? calculateEyePuffOverlap(game.puffWindow, now) : null;
+      const liveAvoidFraction = livePuff ? livePuff.eyeOverlapMs / CONFIG.airPuffDurationMs : 0;
+      const configLines = DEBUG_CONFIG_KEYS
+        .map(key => `  ${key}: ${formatConfigValue(CONFIG[key])}`)
+        .join("\n");
+      const rigLines = Object.entries(rig)
+        .map(([key, value]) => `  ${key}: ${value}`)
+        .join("\n");
+      const artLines = [
+        ...DEBUG_ART_LAYOUT_ITEMS.map(item => `  ${item.layoutKey}: ${formatLayoutValue(artLayout[item.layoutKey])}`),
+        `  odorPacket: ${formatLayoutValue(artLayout.odorPacket)}`
+      ].join("\n");
+
+      ui.debugPanel.textContent = [
+        "edit gameplay: game-config.js",
+        "edit art layout: asset-layout.js",
+        `level id: ${ACTIVE_LEVEL_ID}`,
+        `level label: ${ACTIVE_LEVEL_LABEL}`,
+        `state: ${game.state}`,
+        `time in state: ${formatMs(now - game.stateStartedAt)}`,
+        `odor count: ${game.odorCount}`,
+        `previous true odor: ${game.previousTrueOdor || "-"}`,
+        `current true odor: ${game.currentTrueOdor || "-"}`,
+        `last comparison: ${game.outcomePreviousOdor || "-"} vs ${game.outcomeCurrentOdor || "-"} (${game.outcomeKind || "-"})`,
+        `visible odor history: ${formatVisibleHistory()}`,
+        `true odor history: ${game.trueHistory.join(" ") || "-"}`,
+        `sniff window: ${formatMs(game.sniffWindowStart)} - ${formatMs(game.sniffWindowEnd)}`,
+        `nose arrival: ${formatMs(game.noseArrivalAt)}`,
+        `water window: ${game.waterWindow ? `${formatMs(game.waterWindow.start)} - ${formatMs(game.waterWindow.end)}` : "-"}`,
+        `recent lick intervals:\n${recentLicks}`,
+        `live reward overlap: ${liveReward ? `${formatMs(liveReward.bestOverlap)}, fraction ${liveRewardFraction.toFixed(2)}` : "-"}`,
+        `resolved reward overlap: ${reward ? `${formatMs(reward.overlapMs)}, fraction ${reward.rewardFraction.toFixed(2)}, hp +${reward.hpGain.toFixed(2)}` : "-"}`,
+        `puff window: ${game.puffWindow ? `${formatMs(game.puffWindow.start)} - ${formatMs(game.puffWindow.end)}` : "-"}`,
+        `eye close used this odor: ${game.eyeCloseUsedForOdor ? "yes" : "no"}`,
+        `eye close duration: ${formatMs(CONFIG.eyeCloseDurationMs)}`,
+        `active eye interval: ${activeEye ? `${formatMs(activeEye.start)} - ${formatMs(activeEye.end)}` : "-"}`,
+        `eye-closed intervals:\n${eyeIntervals}`,
+        `live puff overlap: ${livePuff ? `${formatMs(livePuff.eyeOverlapMs)}, avoid ${liveAvoidFraction.toFixed(2)}` : "-"}`,
+        `resolved puff overlap: ${puff ? `${formatMs(puff.eyeOverlapMs)}, avoid ${puff.avoidFraction.toFixed(2)}, damage ${puff.damage.toFixed(2)}` : "-"}`,
+        `gameplay config:\n${configLines}`,
+        `rig layout:\n${rigLines}`,
+        `art layout:\n${artLines}`
+      ].join("\n");
+    }
+
+    let frameRequestId = 0;
+    let frameTimerId = 0;
+    let lastFrameAt = 0;
+    let visibilityPauseStartedAt = 0;
+    let resumeBgmAfterVisibility = false;
+
+    function currentFrameIntervalMs() {
+      const activeFrameRate = IS_TOUCH_DEVICE ? CONFIG.mobileFrameRate : CONFIG.desktopFrameRate;
+      const idle = !game.running || game.state === STATE.GAME_OVER;
+      const frameRate = idle && !game.debug ? CONFIG.idleFrameRate : activeFrameRate;
+      return 1000 / clamp(frameRate, 1, 60);
+    }
+
+    function clearScheduledFrame() {
+      if (frameRequestId) {
+        cancelAnimationFrame(frameRequestId);
+        frameRequestId = 0;
+      }
+      if (frameTimerId) {
+        clearTimeout(frameTimerId);
+        frameTimerId = 0;
+      }
+    }
+
+    function scheduleNextFrame(delayMs = 0) {
+      if (document.hidden || frameRequestId || frameTimerId) return;
+
+      if (delayMs > 1) {
+        frameTimerId = window.setTimeout(() => {
+          frameTimerId = 0;
+          frameRequestId = requestAnimationFrame(loop);
+        }, delayMs);
+        return;
+      }
+
+      frameRequestId = requestAnimationFrame(loop);
+    }
+
+    function requestImmediateFrame() {
+      if (document.hidden) return;
+      clearScheduledFrame();
+      scheduleNextFrame(0);
+    }
+
+    function shiftWindowTime(windowRange, deltaMs) {
+      if (!windowRange) return;
+      windowRange.start += deltaMs;
+      windowRange.end += deltaMs;
+    }
+
+    function shiftGameClock(deltaMs) {
+      if (!Number.isFinite(deltaMs) || deltaMs <= 0) return;
+
+      game.stateStartedAt += deltaMs;
+      if (game.odorStartAt) game.odorStartAt += deltaMs;
+      if (game.noseArrivalAt) game.noseArrivalAt += deltaMs;
+      if (game.sniffWindowStart) game.sniffWindowStart += deltaMs;
+      if (game.sniffWindowEnd) game.sniffWindowEnd += deltaMs;
+      if (game.feedbackUntil) game.feedbackUntil += deltaMs;
+
+      shiftWindowTime(game.waterWindow, deltaMs);
+      shiftWindowTime(game.puffWindow, deltaMs);
+
+      for (const lick of game.lickIntervals) {
+        lick.keyAt += deltaMs;
+        lick.start += deltaMs;
+        lick.end += deltaMs;
+      }
+
+      for (const interval of game.eyeClosedIntervals) {
+        interval.start += deltaMs;
+        interval.end += deltaMs;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        visibilityPauseStartedAt = performance.now();
+        resumeBgmAfterVisibility = audio.bgmActive;
+        if (audio.bgm) audio.bgm.pause();
+        clearScheduledFrame();
+        return;
+      }
+
+      shiftGameClock(performance.now() - visibilityPauseStartedAt);
+      visibilityPauseStartedAt = 0;
+      if (resumeBgmAfterVisibility && game.running && game.state !== STATE.GAME_OVER) {
+        setBgmActive(true);
+      }
+      resumeBgmAfterVisibility = false;
+      lastFrameAt = 0;
+      requestImmediateFrame();
+    }
+
+    function loop(now) {
+      frameRequestId = 0;
+      if (document.hidden) return;
+
+      if (game.running && game.state !== STATE.GAME_OVER) {
+        update(now);
+      }
+      render(now);
+      syncUi();
+      syncDebug(now);
+      lastFrameAt = now;
+
+      const nextDelay = Math.max(0, currentFrameIntervalMs() - (performance.now() - lastFrameAt));
+      scheduleNextFrame(nextDelay);
+    }
+
+    ui.startButton.addEventListener("click", () => {
+      startGame();
+      requestImmediateFrame();
+    });
+    ui.resetButton.addEventListener("click", () => {
+      resetGame(performance.now());
+      requestImmediateFrame();
+    });
+    ui.soundButton.addEventListener("click", toggleSound);
+
+    function handleStartOrSniff() {
+      if (!game.running && game.state === STATE.IDLE) {
+        startGame();
+      } else {
+        handleSniff(performance.now());
+      }
+    }
+
+    function bindTouchAction(button, action) {
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        action();
+        requestImmediateFrame();
+      });
+    }
+
+    bindTouchAction(ui.touchSniffButton, handleStartOrSniff);
+    bindTouchAction(ui.touchLickButton, () => requestLick(performance.now()));
+    bindTouchAction(ui.touchCloseButton, () => requestEyeClose(performance.now()));
+
+    window.addEventListener("keydown", event => {
+      const key = event.key.toLowerCase();
+
+      if (key === " " || key === "spacebar") {
+        event.preventDefault();
+        if (!event.repeat) {
+          handleStartOrSniff();
+          requestImmediateFrame();
+        }
+      }
+
+      if (key === "l") {
+        event.preventDefault();
+        if (!event.repeat) {
+          requestLick(performance.now());
+          requestImmediateFrame();
+        }
+      }
+
+      if (key === "c") {
+        event.preventDefault();
+        if (!event.repeat) {
+          requestEyeClose(performance.now());
+          requestImmediateFrame();
+        }
+      }
+
+      if (key === "d" && !event.repeat) {
+        game.debug = !game.debug;
+        requestImmediateFrame();
+      }
+    });
+
+    window.addEventListener("keyup", event => {
+      const key = event.key.toLowerCase();
+      if (key === "c") {
+        event.preventDefault();
+      }
+    });
+
+    resetGame();
+    updateSoundButton();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    requestImmediateFrame();
+  </script>
+</body>
+</html>
