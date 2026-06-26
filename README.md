@@ -8,6 +8,7 @@
 - `game-config.js`: 玩法参数，例如气味速度、判定窗口、HP、音量。
 - `asset-layout.js`: 图片摆放、判定点和 UI 图标尺寸。
 - `assets/`: PNG 素材和 WAV 音频。
+- `assets/audio/bgm.m4a`: 背景音乐。其他音效仍使用 WAV。
 - `mouse-odor-challenge-itch.zip`: itch.io 上传包。
 
 ## 本地运行
