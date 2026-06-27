@@ -16,6 +16,7 @@
       --reward: #148c5a;
       --danger: #b74343;
       --warn: #ba7a10;
+      --hp-color: #2f9e71;
       --ui-icon-width: 22px;
       --ui-icon-height: 22px;
       --hp-icon-width: 26px;
@@ -75,6 +76,28 @@
       border-color: var(--accent);
     }
 
+    .volume-controls {
+      display: grid;
+      grid-template-columns: auto minmax(72px, 104px);
+      gap: 4px 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.82);
+      padding: 6px 8px;
+    }
+
+    .volume-controls label {
+      font: 700 11px/1 Arial, Helvetica, sans-serif;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .volume-controls input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
     .pill {
       display: inline-flex;
       gap: 6px;
@@ -123,17 +146,80 @@
 
     .hp-track {
       height: 18px;
-      border: 1px solid #78909c;
-      border-radius: 5px;
-      background: #e9eef1;
+      border: 1px solid #7f98a3;
+      border-radius: 999px;
+      background: #e7eef1;
       overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(31, 38, 48, 0.18);
     }
 
     .hp-fill {
       width: 50%;
       height: 100%;
-      background: linear-gradient(90deg, #d95b50, #dfb443 45%, #25a268);
+      background: var(--hp-color);
       transition: width 120ms linear;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .hp-wrap.hp-gain .hp-fill {
+      animation: hpGainPulse 680ms ease-out;
+    }
+
+    .hp-wrap.hp-damage {
+      animation: hpDamageShake 360ms ease-out;
+    }
+
+    .hp-wrap.hp-damage .hp-fill {
+      animation: hpDamageFlash 360ms ease-out;
+    }
+
+    @keyframes hpGainPulse {
+      0% {
+        filter: brightness(1);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12), 0 0 0 rgba(47, 158, 113, 0);
+      }
+      28% {
+        filter: brightness(1.42);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 0 16px rgba(47, 158, 113, 0.78);
+      }
+      52% {
+        filter: brightness(1.16);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08), 0 0 8px rgba(120, 218, 174, 0.72);
+      }
+      100% {
+        filter: brightness(1);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12), 0 0 0 rgba(47, 158, 113, 0);
+      }
+    }
+
+    @keyframes hpDamageShake {
+      0%, 100% {
+        transform: translateX(0);
+      }
+      20% {
+        transform: translateX(-5px);
+      }
+      40% {
+        transform: translateX(5px);
+      }
+      60% {
+        transform: translateX(-3px);
+      }
+      80% {
+        transform: translateX(3px);
+      }
+    }
+
+    @keyframes hpDamageFlash {
+      0% {
+        filter: brightness(1);
+      }
+      30% {
+        filter: brightness(1.32);
+      }
+      100% {
+        filter: brightness(1);
+      }
     }
 
     .canvas-wrap {
@@ -245,6 +331,11 @@
         font-size: 12px;
       }
 
+      .volume-controls {
+        grid-template-columns: auto 70px;
+        padding: 5px 6px;
+      }
+
       .stats {
         grid-area: stats;
         gap: 4px;
@@ -253,10 +344,6 @@
       .stats .pill {
         padding: 5px 6px;
         font-size: 12px;
-      }
-
-      .stats .pill:last-child {
-        display: none;
       }
 
       .hp-wrap {
@@ -367,6 +454,14 @@
         <button id="startButton" type="button">Start</button>
         <button id="resetButton" type="button">Reset</button>
         <button id="soundButton" type="button">Sound On</button>
+        <div class="volume-controls" aria-label="Audio volume controls">
+          <label for="bgmVolumeSlider">BGM</label>
+          <input id="bgmVolumeSlider" type="range" min="0" max="100" step="1" value="16">
+          <label for="sfxVolumeSlider">SFX</label>
+          <input id="sfxVolumeSlider" type="range" min="0" max="100" step="1" value="55">
+          <label for="rhythmLagSlider">Lag <span id="rhythmLagText">0ms</span></label>
+          <input id="rhythmLagSlider" type="range" min="-500" max="500" step="5" value="0">
+        </div>
       </div>
 
       <div class="hp-wrap" aria-label="Health points">
@@ -377,10 +472,8 @@
 
       <div class="stats">
         <span class="pill">Odor <strong id="odorText">0</strong></span>
-        <span class="pill"><img class="ui-icon" src="assets/reward_icon.png" alt="">Rewards <strong id="rewardText">0</strong></span>
-        <span class="pill"><img class="ui-icon" src="assets/puff_icon.png" alt="">Puffs <strong id="puffText">0</strong></span>
-        <span class="pill">Misses <strong id="missText">0</strong></span>
-        <span class="pill">HP +<strong id="gainText">0.0</strong> / -<strong id="lossText">0.0</strong></span>
+        <span class="pill"><img class="ui-icon" src="assets/reward_icon.png" alt="">Rewards <strong id="rewardText">0/0</strong></span>
+        <span class="pill"><img class="ui-icon" src="assets/puff_icon.png" alt="">Puffs <strong id="puffText">0/0</strong></span>
       </div>
 
       <div class="history" id="historyText">_ _ _ _ _ _</div>
@@ -409,29 +502,33 @@
       canvasWidth: 1280,
       canvasHeight: 720,
 
-      odorTravelTimeMs: 1700,
-      interOdorIntervalMs: 450,
+      odorTravelTimeMs: 500,
+      interOdorIntervalMs: 350,
       sniffWindowMs: 300,
-      odorFeedbackMs: 300,
+      odorFeedbackMs: 500,
 
       odorSet: ["A", "B"],
       visibleHistoryLength: 6,
 
       waterDurationMs: 100,
-      lickLatencyMs: 20,
+      lickLatencyMs: 0,
       lickDwellMs: 200,
       fullRewardHpGain: 10,
 
       airPuffDurationMs: 100,
-      eyeCloseLatencyMs: 20,
+      eyeCloseLatencyMs: 0,
       eyeCloseDurationMs: 300,
       fullPuffDamage: 15,
+      effectFadeMs: 700,
 
       startingHp: 50,
       maxHp: 100,
 
-      streamStartDelayMs: 350,
-      outcomeDelayMs: 220,
+      streamStartDelayMs: 0,
+      outcomeDelayMs: 450,
+      rhythmBeatMs: 950,
+      rhythmMinBeatMs: 600,
+      rhythmLagMs: 0,
 
       audioEnabled: true,
       bgmVolume: 0.16,
@@ -455,6 +552,27 @@
       ...ACTIVE_LEVEL_CONFIG
     };
 
+    function deriveRhythmTiming(config) {
+      const actionLatencyMs = Math.max(config.lickLatencyMs, config.eyeCloseLatencyMs);
+      const outcomeDurationMs = Math.max(config.waterDurationMs, config.airPuffDurationMs);
+      const requestedBeatMs = Number.isFinite(config.rhythmBeatMs)
+        ? config.rhythmBeatMs
+        : DEFAULT_CONFIG.rhythmBeatMs;
+      const minBeatMs = Math.ceil(Math.max(
+        1,
+        config.odorFeedbackMs - actionLatencyMs,
+        actionLatencyMs + outcomeDurationMs + config.odorTravelTimeMs
+      ));
+      const beatMs = Math.max(requestedBeatMs, minBeatMs);
+
+      config.rhythmMinBeatMs = minBeatMs;
+      config.rhythmBeatMs = beatMs;
+      config.outcomeDelayMs = beatMs + actionLatencyMs - config.odorFeedbackMs;
+      config.interOdorIntervalMs = beatMs - actionLatencyMs - outcomeDurationMs - config.odorTravelTimeMs;
+    }
+
+    deriveRhythmTiming(CONFIG);
+
     const DEBUG_CONFIG_KEYS = [
       "canvasWidth",
       "canvasHeight",
@@ -464,6 +582,9 @@
       "odorFeedbackMs",
       "streamStartDelayMs",
       "outcomeDelayMs",
+      "rhythmBeatMs",
+      "rhythmMinBeatMs",
+      "rhythmLagMs",
       "odorSet",
       "visibleHistoryLength",
       "waterDurationMs",
@@ -474,6 +595,7 @@
       "eyeCloseLatencyMs",
       "eyeCloseDurationMs",
       "fullPuffDamage",
+      "effectFadeMs",
       "startingHp",
       "maxHp",
       "audioEnabled",
@@ -518,17 +640,19 @@
       startButton: document.getElementById("startButton"),
       resetButton: document.getElementById("resetButton"),
       soundButton: document.getElementById("soundButton"),
+      bgmVolumeSlider: document.getElementById("bgmVolumeSlider"),
+      sfxVolumeSlider: document.getElementById("sfxVolumeSlider"),
+      rhythmLagSlider: document.getElementById("rhythmLagSlider"),
+      rhythmLagText: document.getElementById("rhythmLagText"),
       touchSniffButton: document.getElementById("touchSniffButton"),
       touchLickButton: document.getElementById("touchLickButton"),
       touchCloseButton: document.getElementById("touchCloseButton"),
+      hpWrap: document.querySelector(".hp-wrap"),
       hpFill: document.getElementById("hpFill"),
       hpText: document.getElementById("hpText"),
       odorText: document.getElementById("odorText"),
       rewardText: document.getElementById("rewardText"),
       puffText: document.getElementById("puffText"),
-      missText: document.getElementById("missText"),
-      gainText: document.getElementById("gainText"),
-      lossText: document.getElementById("lossText"),
       historyText: document.getElementById("historyText"),
       debugPanel: document.getElementById("debugPanel")
     };
@@ -642,11 +766,14 @@
       stateStartedAt: performance.now(),
       running: false,
       debug: false,
+      rhythmLagMs: Number.isFinite(CONFIG.rhythmLagMs) ? CONFIG.rhythmLagMs : 0,
 
       hp: CONFIG.startingHp,
       odorCount: 0,
       rewardCount: 0,
+      rewardOpportunityCount: 0,
       puffCount: 0,
+      puffAvoidCount: 0,
       missCount: 0,
       totalHpGained: 0,
       totalHpLost: 0,
@@ -660,6 +787,7 @@
       visibleHistory: [],
       odorStartAt: 0,
       noseArrivalAt: 0,
+      nextOdorStartAt: 0,
       sniffWindowStart: 0,
       sniffWindowEnd: 0,
       sniffHandled: false,
@@ -722,7 +850,11 @@
     const audio = {
       enabled: CONFIG.audioEnabled !== false,
       muted: false,
+      unlocked: false,
       bgmActive: false,
+      bgmGridZeroAt: null,
+      bgmVolume: clamp(CONFIG.bgmVolume, 0, 1),
+      sfxVolume: clamp(CONFIG.sfxVolume, 0, 1),
       bgm: null,
       sfx: {}
     };
@@ -731,13 +863,13 @@
       audio.bgm = new Audio(AUDIO_SOURCES.bgm);
       audio.bgm.loop = true;
       audio.bgm.preload = "auto";
-      audio.bgm.volume = clamp(CONFIG.bgmVolume, 0, 1);
+      audio.bgm.volume = audio.bgmVolume;
 
       for (const [kind, src] of Object.entries(AUDIO_SOURCES)) {
         if (kind === "bgm") continue;
         const sound = new Audio(src);
         sound.preload = "auto";
-        sound.volume = clamp(CONFIG.sfxVolume, 0, 1);
+        sound.volume = audio.sfxVolume;
         audio.sfx[kind] = sound;
       }
     }
@@ -747,18 +879,52 @@
       ui.soundButton.textContent = audio.enabled && !audio.muted ? "Sound On" : "Sound Off";
     }
 
+    function syncVolumeControls() {
+      if (ui.bgmVolumeSlider) ui.bgmVolumeSlider.value = String(Math.round(audio.bgmVolume * 100));
+      if (ui.sfxVolumeSlider) ui.sfxVolumeSlider.value = String(Math.round(audio.sfxVolume * 100));
+      if (ui.rhythmLagSlider) {
+        const lagLimit = Math.floor(rhythmBeatMs() / 2);
+        ui.rhythmLagSlider.min = String(-lagLimit);
+        ui.rhythmLagSlider.max = String(lagLimit);
+        ui.rhythmLagSlider.value = String(Math.round(game.rhythmLagMs));
+      }
+      if (ui.rhythmLagText) ui.rhythmLagText.textContent = `${Math.round(game.rhythmLagMs)}ms`;
+    }
+
+    function setBgmVolume(value) {
+      audio.bgmVolume = clamp(Number(value) / 100, 0, 1);
+      if (audio.bgm) audio.bgm.volume = audio.bgmVolume;
+    }
+
+    function setSfxVolume(value) {
+      audio.sfxVolume = clamp(Number(value) / 100, 0, 1);
+      for (const sound of Object.values(audio.sfx)) {
+        sound.volume = audio.sfxVolume;
+      }
+    }
+
+    function setRhythmLag(value) {
+      const lagLimit = rhythmBeatMs() / 2;
+      game.rhythmLagMs = clamp(Number(value), -lagLimit, lagLimit);
+      if (ui.rhythmLagSlider) ui.rhythmLagSlider.value = String(Math.round(game.rhythmLagMs));
+      if (ui.rhythmLagText) ui.rhythmLagText.textContent = `${Math.round(game.rhythmLagMs)}ms`;
+    }
+
     function unlockAudio() {
       if (!audio.enabled || !audio.bgm) return;
+      if (audio.unlocked) return;
       audio.bgm.load();
       for (const sound of Object.values(audio.sfx)) {
         sound.load();
       }
+      audio.unlocked = true;
     }
 
     function setBgmActive(active) {
       audio.bgmActive = Boolean(active && audio.enabled && !audio.muted);
       if (audio.bgm) {
         if (audio.bgmActive) {
+          audio.bgmGridZeroAt = performance.now() - audio.bgm.currentTime * 1000;
           audio.bgm.play().catch(() => {});
         } else {
           audio.bgm.pause();
@@ -771,20 +937,18 @@
       audio.muted = !audio.muted;
       if (!audio.muted) {
         unlockAudio();
-      }
-
-      if (game.running && game.state !== STATE.GAME_OVER) {
-        setBgmActive(!audio.muted);
+        setBgmActive(true);
       } else {
-        updateSoundButton();
+        setBgmActive(false);
       }
+      updateSoundButton();
     }
 
     function playSfx(kind) {
       if (!audio.enabled || audio.muted || !audio.sfx[kind]) return;
 
       const sound = audio.sfx[kind];
-      sound.volume = clamp(CONFIG.sfxVolume, 0, 1);
+      sound.volume = audio.sfxVolume;
       try {
         sound.pause();
         sound.currentTime = 0;
@@ -850,7 +1014,9 @@
       game.hp = CONFIG.startingHp;
       game.odorCount = 0;
       game.rewardCount = 0;
+      game.rewardOpportunityCount = 0;
       game.puffCount = 0;
+      game.puffAvoidCount = 0;
       game.missCount = 0;
       game.totalHpGained = 0;
       game.totalHpLost = 0;
@@ -863,6 +1029,7 @@
       game.visibleHistory = [];
       game.odorStartAt = 0;
       game.noseArrivalAt = 0;
+      game.nextOdorStartAt = 0;
       game.sniffWindowStart = 0;
       game.sniffWindowEnd = 0;
       game.sniffHandled = false;
@@ -875,9 +1042,42 @@
       game.lickIntervals = [];
       game.eyeCloseUsedForOdor = false;
       game.eyeClosedIntervals = [];
-      setBgmActive(false);
       setFeedback("Press Start", now, 1000000);
       syncUi();
+    }
+
+    function rhythmBeatMs() {
+      return Math.max(1, Number(CONFIG.rhythmBeatMs) || 950);
+    }
+
+    function ensureRhythmGrid(now) {
+      if (!Number.isFinite(audio.bgmGridZeroAt)) {
+        const bgmTimeMs = audio.bgm ? audio.bgm.currentTime * 1000 : 0;
+        audio.bgmGridZeroAt = now - bgmTimeMs;
+      }
+      return audio.bgmGridZeroAt;
+    }
+
+    function nextRhythmOnsetAt(afterTime) {
+      const beat = rhythmBeatMs();
+      const zeroAt = ensureRhythmGrid(performance.now());
+      const lag = game.rhythmLagMs;
+      let beatIndex = Math.ceil((afterTime - zeroAt - lag) / beat);
+      let target = zeroAt + beatIndex * beat + lag;
+      if (target < afterTime) {
+        beatIndex += 1;
+        target = zeroAt + beatIndex * beat + lag;
+      }
+      return target;
+    }
+
+    function scheduleRhythmStreamStart(now) {
+      const earliestFirstSniffAt = now + CONFIG.streamStartDelayMs + CONFIG.odorTravelTimeMs;
+      const firstSniffAt = nextRhythmOnsetAt(earliestFirstSniffAt);
+      const streamStateStartedAt = firstSniffAt - CONFIG.odorTravelTimeMs - CONFIG.streamStartDelayMs;
+      const waitMs = Math.max(0, firstSniffAt - now);
+      startStream(streamStateStartedAt, now, firstSniffAt);
+      setFeedback(`First sniff in ${Math.round(waitMs)} ms`, now, Math.max(650, waitMs));
     }
 
     function startGame() {
@@ -888,18 +1088,17 @@
       game.running = true;
       setBgmActive(true);
       playSfx("start");
-      startStream(now);
+      scheduleRhythmStreamStart(now);
     }
 
-    function startStream(now) {
+    function startStream(stateStartedAt, feedbackNow = stateStartedAt) {
       game.lastOdorLabel = "";
       game.waterWindow = null;
       game.puffWindow = null;
       game.latestRewardCalc = null;
       game.latestPuffCalc = null;
-      game.lickIntervals = game.lickIntervals.filter(interval => interval.end > now - 2000);
-      setFeedback("Odor stream started", now, 650);
-      setState(STATE.STREAM_START, now);
+      game.lickIntervals = game.lickIntervals.filter(interval => interval.end > feedbackNow - 2000);
+      setState(STATE.STREAM_START, stateStartedAt);
     }
 
     function startOdor(now) {
@@ -913,6 +1112,7 @@
       game.puffWindow = null;
       game.odorStartAt = now;
       game.noseArrivalAt = now + CONFIG.odorTravelTimeMs;
+      game.nextOdorStartAt = game.noseArrivalAt + rhythmBeatMs() * 2 - CONFIG.odorTravelTimeMs;
       game.sniffWindowStart = game.noseArrivalAt - CONFIG.sniffWindowMs;
       game.sniffWindowEnd = game.noseArrivalAt + CONFIG.sniffWindowMs;
       game.sniffHandled = false;
@@ -938,7 +1138,7 @@
       game.sniffFeedbackKind = "hit";
       playSfx("sniffHit");
       setFeedback(`Sniff hit: ${odor}`, now);
-      setState(STATE.ODOR_FEEDBACK, now);
+      setState(STATE.ODOR_FEEDBACK, game.noseArrivalAt);
     }
 
     function missCurrentOdor(now) {
@@ -949,7 +1149,7 @@
       game.missCount += 1;
       playSfx("sniffMiss");
       setFeedback("Sniff miss", now);
-      setState(STATE.ODOR_FEEDBACK, now);
+      setState(STATE.ODOR_FEEDBACK, game.noseArrivalAt);
     }
 
     function requestLick(now) {
@@ -1045,6 +1245,23 @@
       };
     }
 
+    const hpEffectTimers = {
+      gain: 0,
+      damage: 0
+    };
+
+    function triggerHpEffect(kind) {
+      if (!ui.hpWrap) return;
+      const className = kind === "gain" ? "hp-gain" : "hp-damage";
+      ui.hpWrap.classList.remove(className);
+      window.clearTimeout(hpEffectTimers[kind]);
+      void ui.hpWrap.offsetWidth;
+      ui.hpWrap.classList.add(className);
+      hpEffectTimers[kind] = window.setTimeout(() => {
+        ui.hpWrap.classList.remove(className);
+      }, kind === "gain" ? 720 : 420);
+    }
+
     function resolveReward(now) {
       const water = game.waterWindow;
       const { bestOverlap, bestLick } = calculateBestLickOverlap(water);
@@ -1053,9 +1270,11 @@
       const hpGain = CONFIG.fullRewardHpGain * rewardFraction;
       game.hp = clamp(game.hp + hpGain, 0, CONFIG.maxHp);
       game.totalHpGained += hpGain;
+      game.rewardOpportunityCount += 1;
 
       if (bestOverlap > 0) {
         game.rewardCount += 1;
+        triggerHpEffect("gain");
         playSfx("reward");
         setFeedback(`Reward: overlap ${Math.round(bestOverlap)} ms, +${hpGain.toFixed(1)} HP`, now);
       } else {
@@ -1082,6 +1301,12 @@
       game.puffCount += 1;
       game.hp = clamp(game.hp - damage, 0, CONFIG.maxHp);
       game.totalHpLost += damage;
+      if (eyeOverlapMs > 0) {
+        game.puffAvoidCount += 1;
+      }
+      if (damage > 0) {
+        triggerHpEffect("damage");
+      }
 
       if (eyeOverlapMs === 0) {
         setFeedback(`Puff hit: -${damage.toFixed(1)} HP`, now);
@@ -1100,7 +1325,6 @@
 
       if (game.hp <= 0) {
         game.running = false;
-        setBgmActive(false);
         playSfx("gameOver");
         setState(STATE.GAME_OVER, now);
         setFeedback("Game Over", now, 1000000);
@@ -1140,49 +1364,49 @@
 
       switch (game.state) {
         case STATE.STREAM_START:
-          if (elapsed > CONFIG.streamStartDelayMs) startOdor(now);
+          if (elapsed >= CONFIG.streamStartDelayMs) startOdor(game.stateStartedAt + CONFIG.streamStartDelayMs);
           break;
 
         case STATE.ODOR_MOVING:
-          if (now >= game.sniffWindowStart) setState(STATE.SNIFF_WINDOW, now);
+          if (now >= game.sniffWindowStart) setState(STATE.SNIFF_WINDOW, game.sniffWindowStart);
           break;
 
         case STATE.SNIFF_WINDOW:
-          if (now > game.sniffWindowEnd && !game.sniffHandled) missCurrentOdor(now);
+          if (now > game.sniffWindowEnd && !game.sniffHandled) missCurrentOdor(game.sniffWindowEnd);
           break;
 
         case STATE.ODOR_FEEDBACK:
-          if (elapsed > CONFIG.odorFeedbackMs && (game.sniffFeedbackKind !== "miss" || now >= odorPacketExitAt())) {
-            setState(STATE.OUTCOME_PENDING, now);
+          if (elapsed >= CONFIG.odorFeedbackMs) {
+            setState(STATE.OUTCOME_PENDING, game.stateStartedAt + CONFIG.odorFeedbackMs);
           }
           break;
 
         case STATE.OUTCOME_PENDING:
-          if (elapsed > CONFIG.outcomeDelayMs) {
-            chooseOutcomeForCurrentOdor(now);
+          if (elapsed >= CONFIG.outcomeDelayMs) {
+            chooseOutcomeForCurrentOdor(game.stateStartedAt + CONFIG.outcomeDelayMs);
           }
           break;
 
         case STATE.REWARD_ACTIVE:
           if (now >= game.waterWindow.end) {
-            resolveReward(now);
-            finishCurrentOdorOutcome(now);
+            resolveReward(game.waterWindow.end);
+            finishCurrentOdorOutcome(game.waterWindow.end);
           }
           break;
 
         case STATE.AIR_PUFF_ACTIVE:
           if (now >= game.puffWindow.end) {
-            resolvePuff(now);
-            finishCurrentOdorOutcome(now);
+            resolvePuff(game.puffWindow.end);
+            finishCurrentOdorOutcome(game.puffWindow.end);
           }
           break;
 
         case STATE.NO_OUTCOME:
-          if (elapsed > 450) setState(STATE.STREAM_GAP, now);
+          if (now >= game.nextOdorStartAt) startOdor(game.nextOdorStartAt);
           break;
 
         case STATE.STREAM_GAP:
-          if (elapsed > CONFIG.interOdorIntervalMs) startOdor(now);
+          if (now >= game.nextOdorStartAt) startOdor(game.nextOdorStartAt);
           break;
       }
     }
@@ -1494,15 +1718,22 @@
       ctx.restore();
     }
 
+    function fadeAlphaForWindow(windowRange, now, activeAlpha, inactiveAlpha = 0) {
+      if (!windowRange) return inactiveAlpha;
+      if (now <= windowRange.end) return activeAlpha;
+      const fadeProgress = clamp((now - windowRange.end) / CONFIG.effectFadeMs, 0, 1);
+      return inactiveAlpha + (activeAlpha - inactiveAlpha) * (1 - fadeProgress);
+    }
+
     function drawWater(now) {
       const waterActive = game.waterWindow && now >= game.waterWindow.start && now <= game.waterWindow.end;
+      const alpha = fadeAlphaForWindow(game.waterWindow, now, 1, 0.22);
 
       if (isArtReady("waterDrop")) {
-        const alpha = waterActive ? 1 : 0.22;
-        if (waterActive) {
+        if (alpha > 0.24) {
           ctx.save();
-          ctx.shadowColor = "rgba(33, 168, 223, 0.55)";
-          ctx.shadowBlur = 18;
+          ctx.shadowColor = `rgba(33, 168, 223, ${0.55 * alpha})`;
+          ctx.shadowBlur = 18 * alpha;
           drawArtWithAlpha("waterDrop", artLayout.waterDrop, alpha);
           ctx.restore();
         } else {
@@ -1512,6 +1743,7 @@
       }
 
       ctx.save();
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = "#55717c";
       ctx.lineWidth = 10;
       ctx.lineCap = "round";
@@ -1531,16 +1763,15 @@
 
     function drawPuff(now) {
       const active = game.state === STATE.AIR_PUFF_ACTIVE && game.puffWindow;
-      const recentlyResolved = game.latestPuffCalc && now - game.stateStartedAt < 900;
-      if (!active && !recentlyResolved) return;
+      const alpha = fadeAlphaForWindow(game.puffWindow, now, 0.92, 0);
+      if (!active && alpha <= 0.01) return;
 
       const baseProgress = game.puffWindow
         ? clamp((now - game.puffWindow.start) / CONFIG.airPuffDurationMs, 0, 1)
         : 1;
 
       if (isArtReady("airPuffParticles")) {
-        const surge = active ? baseProgress * 95 : 95;
-        const alpha = active ? 0.92 : 0.45;
+        const surge = baseProgress * 95;
         drawMirroredArtWithAlpha("airPuffParticles", {
           x: artLayout.airPuffParticles.x - surge,
           y: artLayout.airPuffParticles.y,
@@ -1557,7 +1788,7 @@
         const offset = i * 18;
         const x = 870 - baseProgress * 280 - offset;
         const y = 306 + Math.sin((now / 80) + i) * 28;
-        ctx.globalAlpha = clamp(1 - baseProgress * 0.4, 0.2, 1);
+        ctx.globalAlpha = alpha * clamp(1 - baseProgress * 0.4, 0.2, 1);
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.quadraticCurveTo(x - 26, y - 12, x - 52, y + 2);
@@ -1786,19 +2017,21 @@
 
     function setCachedStyle(key, element, property, value) {
       if (uiCache[key] === value) return;
-      element.style[property] = value;
+      if (property.startsWith("--")) {
+        element.style.setProperty(property, value);
+      } else {
+        element.style[property] = value;
+      }
       uiCache[key] = value;
     }
 
     function syncUi() {
       setCachedStyle("hpWidth", ui.hpFill, "width", `${(game.hp / CONFIG.maxHp) * 100}%`);
+      setCachedStyle("hpColor", document.documentElement, "--hp-color", game.hp <= CONFIG.maxHp * 0.25 ? "#d6534a" : game.hp <= CONFIG.maxHp * 0.5 ? "#d59b2b" : "#2f9e71");
       setCachedText("hpText", ui.hpText, `${game.hp.toFixed(1)}/${CONFIG.maxHp}`);
       setCachedText("odorText", ui.odorText, String(game.odorCount));
-      setCachedText("rewardText", ui.rewardText, String(game.rewardCount));
-      setCachedText("puffText", ui.puffText, String(game.puffCount));
-      setCachedText("missText", ui.missText, String(game.missCount));
-      setCachedText("gainText", ui.gainText, game.totalHpGained.toFixed(1));
-      setCachedText("lossText", ui.lossText, game.totalHpLost.toFixed(1));
+      setCachedText("rewardText", ui.rewardText, `${game.rewardCount}/${game.rewardOpportunityCount}`);
+      setCachedText("puffText", ui.puffText, `${game.puffAvoidCount}/${game.puffCount}`);
       setCachedText("historyText", ui.historyText, formatVisibleHistory());
     }
 
@@ -1851,6 +2084,8 @@
         `state: ${game.state}`,
         `time in state: ${formatMs(now - game.stateStartedAt)}`,
         `odor count: ${game.odorCount}`,
+        `reward score: ${game.rewardCount}/${game.rewardOpportunityCount}`,
+        `puff avoid score: ${game.puffAvoidCount}/${game.puffCount}`,
         `previous true odor: ${game.previousTrueOdor || "-"}`,
         `current true odor: ${game.currentTrueOdor || "-"}`,
         `last comparison: ${game.outcomePreviousOdor || "-"} vs ${game.outcomeCurrentOdor || "-"} (${game.outcomeKind || "-"})`,
@@ -1931,6 +2166,7 @@
       game.stateStartedAt += deltaMs;
       if (game.odorStartAt) game.odorStartAt += deltaMs;
       if (game.noseArrivalAt) game.noseArrivalAt += deltaMs;
+      if (game.nextOdorStartAt) game.nextOdorStartAt += deltaMs;
       if (game.sniffWindowStart) game.sniffWindowStart += deltaMs;
       if (game.sniffWindowEnd) game.sniffWindowEnd += deltaMs;
       if (game.feedbackUntil) game.feedbackUntil += deltaMs;
@@ -1961,7 +2197,7 @@
 
       shiftGameClock(performance.now() - visibilityPauseStartedAt);
       visibilityPauseStartedAt = 0;
-      if (resumeBgmAfterVisibility && game.running && game.state !== STATE.GAME_OVER) {
+      if (resumeBgmAfterVisibility) {
         setBgmActive(true);
       }
       resumeBgmAfterVisibility = false;
@@ -1994,12 +2230,33 @@
       requestImmediateFrame();
     });
     ui.soundButton.addEventListener("click", toggleSound);
+    ui.bgmVolumeSlider.addEventListener("input", event => {
+      setBgmVolume(event.target.value);
+    });
+    ui.sfxVolumeSlider.addEventListener("input", event => {
+      setSfxVolume(event.target.value);
+    });
+    ui.rhythmLagSlider.addEventListener("input", event => {
+      setRhythmLag(event.target.value);
+    });
+
+    function resetAfterGameOver(now) {
+      if (game.state !== STATE.GAME_OVER) return false;
+      resetGame(now);
+      if (!audio.muted) setBgmActive(true);
+      return true;
+    }
 
     function handleStartOrSniff() {
+      const now = performance.now();
+      if (resetAfterGameOver(now)) {
+        return;
+      }
+
       if (!game.running && game.state === STATE.IDLE) {
         startGame();
       } else {
-        handleSniff(performance.now());
+        handleSniff(now);
       }
     }
 
@@ -2014,6 +2271,13 @@
     bindTouchAction(ui.touchSniffButton, handleStartOrSniff);
     bindTouchAction(ui.touchLickButton, () => requestLick(performance.now()));
     bindTouchAction(ui.touchCloseButton, () => requestEyeClose(performance.now()));
+
+    canvas.addEventListener("pointerdown", event => {
+      if (game.state !== STATE.GAME_OVER) return;
+      event.preventDefault();
+      resetAfterGameOver(performance.now());
+      requestImmediateFrame();
+    });
 
     window.addEventListener("keydown", event => {
       const key = event.key.toLowerCase();
@@ -2057,6 +2321,7 @@
 
     resetGame();
     updateSoundButton();
+    syncVolumeControls();
     document.addEventListener("visibilitychange", handleVisibilityChange);
     requestImmediateFrame();
   </script>

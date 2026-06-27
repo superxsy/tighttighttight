@@ -14,7 +14,8 @@ window.ABA_GAME_CONFIG = {
   odorTravelTimeMs: 500,
 
   // 上一个气味结束后，到下一个气味开始前的间隔。越大，节奏越慢。
-  interOdorIntervalMs: 500,
+  // Derived from rhythmBeatMs at runtime. Leave as null.
+  interOdorIntervalMs: null,
 
   // 嗅闻成功窗口的一半宽度。当前逻辑是鼻子到达时间前后各 sniffWindowMs 都算成功。
   // 例如 300 表示：到达前 300ms 到到达后 300ms 内按 Space 都成功。
@@ -24,10 +25,18 @@ window.ABA_GAME_CONFIG = {
   odorFeedbackMs: 500,
 
   // 按 Start 后，第一股气味出现前的等待时间。
-  streamStartDelayMs: 500,
+  streamStartDelayMs: 0,
 
   // 嗅闻反馈结束后，到水奖励或气吹惩罚真正开始前的等待时间。
-  outcomeDelayMs: 500,
+  // Derived from rhythmBeatMs at runtime. Leave as null.
+  outcomeDelayMs: null,
+
+  // Rhythm mode. Perfect inputs are Space -> k ms -> L/C -> k ms -> Space.
+  // Only edit rhythmBeatMs for tempo. Current minimum is 600 ms:
+  // max(odorFeedbackMs - actionLatencyMs, actionLatencyMs + outcomeDurationMs + odorTravelTimeMs).
+  // With current values: max(500 - 0, 0 + 100 + 500) = 600.
+  rhythmBeatMs: 900,
+  rhythmLagMs: 0,
 
   // 可能出现的气味种类。现在是 A/B；如果以后想加 C，可以写成 ["A", "B", "C"]。
   odorSet: ["A", "B"],
@@ -39,7 +48,7 @@ window.ABA_GAME_CONFIG = {
   waterDurationMs: 100,
 
   // 按下 L 后，舌头真正伸出的延迟。越大，玩家需要更早按 L。
-  lickLatencyMs: 20,
+  lickLatencyMs: 0,
 
   // 舌头伸出并保持可判定的时间。越大，越容易和水奖励窗口重叠。
   lickDwellMs: 200,
@@ -51,7 +60,7 @@ window.ABA_GAME_CONFIG = {
   airPuffDurationMs: 100,
 
   // 按下 C 后，眼睛真正闭上的延迟。越大，玩家需要更早按 C。
-  eyeCloseLatencyMs: 20,
+  eyeCloseLatencyMs: 0,
 
   // 每次按 C 后，真正闭眼持续多久。现在固定为 300ms，松开 C 不会提前结束。
   eyeCloseDurationMs: 300,
@@ -73,6 +82,9 @@ window.ABA_GAME_CONFIG = {
 
   // 操作、奖励、惩罚等音效音量，范围建议 0 到 1。
   sfxVolume: 0.55,
+
+  // Visual fade time after water or puff effects finish.
+  effectFadeMs: 700,
 
   // Mobile performance tuning. Lower values reduce heat and battery use.
   mobileRenderScale: 0.75,
